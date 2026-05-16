@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Сервис базы данных
+  postgres:
+    image: postgres:14
+    container_name: hakaton_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: data
+    ports:
+      - "5433:5432"  # Внешний порт 5433, внутренний 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Сервис твоего приложения
+  streamlit:
+    build: .
+    container_name: hakaton_streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: data
+      DB_USER: postgres
+      DB_PASSWORD: 1234
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
